@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    Lập trình web ASP.NET MVC Khoa Công nghệ Thông tin
+    Trang 8 Biên soạn: ThS. Nguyễn Đình Ánh
+    <title>Quản lý sách</title>
+</head>
+<body>
+    <div>
+        <h2>Danh sách</h2>
+        <ul id="Books" />
+    </div>
+    <div>
+        <h2>Tìm kiếm bằng mã sách</h2>
+        <input type="text" id="prodid" size="5" />
+        <input type="button" value="Search" onclick="find();" />
+        <p id="book" />
+    </div>
+    <div>
+        <h2>Add sách</h2>
+        <p>Name: <input type="text" id="name" /></p>
+        <p>Type: <input type="text" id="type" /></p>
+        <p>Price: <input type="text" id="price" /></p>
+        <button type="submit" id="add-order">Add!</button>
+        <button type="submit" id="edit-order">Edit</button>
+
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-2.0.3.js" integrity="sha256-lCf+LfUffUxr81+W0ZFpcU0LQyuZ3Bj0F2DQNCxTgSI=" crossorigin="anonymous"></script>
+    <script>
+
+        let indexEdit = -1;
+        var $name = $('#name');
+        var $type = $('#type');
+        var $price = $('#price');
+        var uri = 'api/book';
+
+        // Get all
+        function getAll() {
+            $('#Books').text("");
+            $(document).ready(function () {
+                $.getJSON(uri)
+                    .done(function (data) {
+                        $.each(data, function (key, item) {
+                            let ele = $('<li>', { text: formatItem(item) })
+                            //Nut xoa
+                            let btnxoa = $('<span>', { text: "| Delete" })
+                            btnxoa.on('click', function () {
+                                DeleteBook(item.id)
+                            })
+                            btnxoa.css("cursor", "pointer")
+                            btnxoa.css("color", "red")
+                            btnxoa.css("margin-left", "10px")
+                            btnxoa.appendTo(ele)
+
+                            //Nut sua
+                            let btnSua = $('<span>', { text: "| Edit" })
+                            btnSua.on('click', function () {
+                                setval(item)
+                                indexEdit = item.id
+                            })
+                            btnSua.css("cursor", "pointer")
+                            btnSua.css("color", "green")
+                            btnSua.css("margin-left", "10px")
+                            btnSua.appendTo(ele)
+
+                            ele.appendTo($('#Books'));
+                        });
+                    });
+            });
+        }
+        getAll();
+
+        function formatItem(item) {
+            return item.id  +"-"+ item.name + ': $' + item.price;
+        }
+
+        function find() {
+            var id = $('#prodid').val();
+            $.getJSON(uri + '/' + id)
+                .done(function (data) {
+                    if (data != null) {
+                        $('#book').text(formatItem(data));
+                    } else {
+                        $('#book').text('Error: Không Tìm Thấy Sách!');
+                    }
+                })
+                .fail(function (jqXHR, textStatus, err) {
+                    $('#book').text('Error:'+err);
+                });
+        }
+
+        $('#add-order').on('click', function () {
+            var book = {
+                name: $name.val(),
+                type: $type.val(),
+                price: $price.val()
+            };
+
+            $.post("/api/book", book, function () {
+                getAll();
+                })
+            })
+
+        function DeleteBook(id) {
+            console.log(id)
+            $.ajax({
+                url: uri+"/"+id,
+                type: 'DELETE',
+                success: function () {
+                    getAll();
+                }
+            })
+        }
+        //load to inputbox
+        function setval(book) {
+            $name.val(book.name)
+            $type.val(book.type)
+            $price.val(book.price)
+        }
+
+
+        //Edit 
+        $('#edit-order').on('click', function () {
+            if (indexEdit == -1) return;
+            var book = {
+                id: indexEdit,
+                name: $name.val(),
+                type: $type.val(),
+                price: $price.val()
+            };
+            if (book.type == "" || book.name == "" || book.price == "") return;
+
+            $.ajax({
+                method:"PUT",
+                url: "/api/book",
+                data: book,
+                success: function() {
+                    getAll();
+                    indexEdit = -1;
+                }
+            })
+        })
+    </script>
+</body>
+</html>
